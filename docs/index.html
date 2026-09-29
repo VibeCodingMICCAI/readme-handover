@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Handover Demo · Stand Activity</title>
+  <meta name="description" content="10-minute vibe-coding stand: use an AI agent to prepare a codebase for handover." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #102220;
+      --muted: #4a5c58;
+      --paper: #f3f7f5;
+      --panel: #ffffff;
+      --line: #d5e0db;
+      --accent: #1f7a6c;
+      --accent-ink: #0d4f45;
+      --warn: #8a5a12;
+      --warn-bg: #fff4df;
+      --ok: #1b6b3a;
+      --shadow: 0 10px 30px rgba(16, 34, 32, 0.08);
+      --radius: 14px;
+      --font: "IBM Plex Sans", system-ui, sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 500px at 10% -10%, #d9efe8 0%, transparent 55%),
+        radial-gradient(900px 420px at 100% 0%, #e7f0ff 0%, transparent 45%),
+        var(--paper);
+      line-height: 1.45;
+    }
+
+    a { color: var(--accent-ink); }
+    code, .mono { font-family: var(--mono); font-size: 0.92em; }
+
+    .wrap {
+      width: min(920px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 1.25rem 0 3.5rem;
+    }
+
+    header.hero {
+      display: grid;
+      gap: 1rem;
+      padding: 1.4rem 0 1.1rem;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent-ink);
+      font-weight: 500;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.85rem, 5vw, 2.7rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .lede {
+      margin: 0;
+      max-width: 40rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-top: 0.35rem;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 0.72rem 1.05rem;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--accent-ink); }
+
+    .btn-secondary {
+      background: var(--panel);
+      color: var(--ink);
+      border-color: var(--line);
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1rem 1.1rem;
+      margin: 1rem 0 1.4rem;
+    }
+
+    .callout {
+      background: var(--warn-bg);
+      border: 1px solid #efd7a8;
+      color: var(--warn);
+      border-radius: var(--radius);
+      padding: 0.9rem 1rem;
+      font-size: 0.95rem;
+    }
+
+    .config-note {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 0.55rem;
+    }
+
+    h2 {
+      margin: 1.8rem 0 0.7rem;
+      font-size: 1.25rem;
+      letter-spacing: -0.01em;
+    }
+
+    ol.steps {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 0.8rem;
+    }
+
+    .step {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1rem 1.05rem;
+    }
+
+    .step-top {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .num {
+      flex: 0 0 auto;
+      width: 1.7rem;
+      height: 1.7rem;
+      border-radius: 999px;
+      background: #e6f3ef;
+      color: var(--accent-ink);
+      display: grid;
+      place-items: center;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .step h3 {
+      margin: 0.1rem 0 0.35rem;
+      font-size: 1.02rem;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .prompt {
+      margin-top: 0.75rem;
+      background: #0f2220;
+      color: #e8f4f0;
+      border-radius: 12px;
+      padding: 0.85rem 0.9rem 0.75rem;
+      position: relative;
+    }
+
+    .prompt pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      line-height: 1.4;
+      max-height: 12rem;
+      overflow: auto;
+    }
+
+    .copy {
+      margin-top: 0.55rem;
+      background: transparent;
+      color: #9fd9cb;
+      border: 1px solid #2d5a50;
+      border-radius: 999px;
+      padding: 0.35rem 0.7rem;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      cursor: pointer;
+    }
+    .copy:hover { border-color: #9fd9cb; color: #fff; }
+    .copy.done { color: #b7f0c8; border-color: #3f7a52; }
+
+    footer {
+      margin-top: 2rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .hidden-config {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!--
+    FACILITATOR SETUP
+    1. Push this repo to GitHub.
+    2. Settings → Pages → Deploy from branch → /docs
+    3. Share https://vibecodingmiccai.github.io/readme-handover/
+  -->
+  <script>
+    // Edit these after you create the GitHub repo (or leave blank to auto-detect).
+    window.STAND_CONFIG = {
+      githubUser: "VibeCodingMICCAI",
+      repoName: "readme-handover",
+      repoUrl: "",             // full override, optional
+      zipUrl: "",              // full override, optional
+      cloneCmd: ""             // full override, optional
+    };
+  </script>
+
+  <main class="wrap">
+    <header class="hero">
+      <div class="kicker">~10 min · vibe coding stand</div>
+      <h1>Prepare a codebase for handover with AI</h1>
+      <p class="lede">
+        You just inherited an under-documented segmentation tool.
+        Use an AI coding agent to write a useful <span class="mono">README.md</span>
+        and a continuing-work <span class="mono">HANDOVER.md</span>.
+      </p>
+      <div class="actions" id="primary-actions">
+        <a class="btn btn-primary" id="open-repo" href="#" target="_blank" rel="noopener">Open repository</a>
+        <a class="btn btn-secondary" id="download-zip" href="#" target="_blank" rel="noopener">Download ZIP</a>
+        <a class="btn btn-secondary" href="./activity.md">Full facilitator notes</a>
+      </div>
+    </header>
+
+    <section class="panel">
+      <strong>Get the code</strong>
+      <p style="margin:0.4rem 0 0.7rem;color:var(--muted)">
+        Clone on your laptop, then open the folder in Cursor / your AI coding tool.
+      </p>
+      <div class="prompt">
+        <pre id="clone-cmd">git clone https://github.com/VibeCodingMICCAI/readme-handover.git</pre>
+        <button class="copy" type="button" data-copy="#clone-cmd">Copy clone command</button>
+      </div>
+      <p class="config-note" id="config-hint">
+        If links still say <span class="mono">YOUR_USER</span>, the facilitator needs to publish the repo and update the page config.
+      </p>
+    </section>
+
+    <div class="callout">
+      <strong>Use this repository.</strong>
+      Clone / download the demo above, open it in your AI coding tool, then run the prompts on <em>that</em> codebase.
+      The starter <span class="mono">README.md</span> is intentionally incomplete — your job is to improve it from evidence in the code.
+    </div>
+
+    <section class="panel" style="margin-top:0">
+      <strong>Example target (optional peek)</strong>
+      <p style="margin:0.4rem 0 0.7rem;color:var(--muted)">
+        You do not need to match this word-for-word. It shows the kind of docs a good pass should produce.
+      </p>
+      <div class="actions" style="margin:0">
+        <a class="btn btn-secondary" href="./examples/README.example.md" target="_blank" rel="noopener">Example README.md</a>
+        <a class="btn btn-secondary" href="./examples/HANDOVER.example.md" target="_blank" rel="noopener">Example HANDOVER.md</a>
+      </div>
+      <p class="config-note">
+        Tip: try generating first, then compare. Spoiler if you open these before asking the AI.
+      </p>
+    </section>
+
+    <h2>Do this</h2>
+    <ol class="steps">
+      <li class="step">
+        <div class="step-top">
+          <div class="num">1</div>
+          <div>
+            <h3>Inspect (1–2 min)</h3>
+            <p>Can you tell what the tool does, how to run it, how to test it, and what is unfinished?</p>
+          </div>
+        </div>
+      </li>
+
+      <li class="step">
+        <div class="step-top">
+          <div class="num">2</div>
+          <div>
+            <h3>Generate README.md</h3>
+            <p>Ask your AI agent to inspect the repo and improve the README from evidence only.</p>
+          </div>
+        </div>
+        <div class="prompt">
+          <pre id="prompt-readme">You are preparing this repository for handover to another developer or AI coding agent.
+Inspect the repository carefully before making any changes.
+Create or update README.md so that someone unfamiliar with the project can understand and run it without asking the original developer for help.
+Include:
+- what the project does
+- the main workflow
+- expected inputs and outputs
+- environment setup and dependencies
+- exact commands to run the project
+- a minimal working example
+- important files and repository structure
+- how to test or verify that it works
+- known limitations or unsupported cases
+Important:
+- Base everything on evidence from the repository.
+- Do not invent commands, behaviour, or design decisions.
+- If something cannot be determined, mark it as "TODO: clarify".
+- Prefer exact filenames, paths and commands.
+- Keep the README concise and practical.</pre>
+          <button class="copy" type="button" data-copy="#prompt-readme">Copy prompt</button>
+        </div>
+      </li>
+
+      <li class="step">
+        <div class="step-top">
+          <div class="num">3</div>
+          <div>
+            <h3>Review · inspect → generate → verify</h3>
+            <p>Did it use real commands? Invent anything? Find limitations? Mark unknowns instead of guessing?</p>
+          </div>
+        </div>
+      </li>
+
+      <li class="step">
+        <div class="step-top">
+          <div class="num">4</div>
+          <div>
+            <h3>Create HANDOVER.md</h3>
+            <p>README explains the project. Handover explains where development currently stands.</p>
+          </div>
+        </div>
+        <div class="prompt">
+          <pre id="prompt-handover">You are handing this repository to another developer or AI coding agent.
+Inspect the repository and current implementation.
+Create HANDOVER.md to help the next person continue development from the current state.
+Include:
+1. Current status
+   - what currently works
+   - what appears incomplete
+2. Known issues
+   - bugs
+   - uncertainties
+   - technical debt
+   - unresolved questions
+3. Next tasks
+   - concrete tasks the next developer could continue with
+4. Important decisions and constraints
+   - implementation choices that should not be accidentally reversed
+   - behaviours or interfaces that should be preserved
+5. Important files
+   - files most relevant to continued development
+6. Verification
+   - commands/tests to run before and after making changes
+Rules:
+- Do not repeat general information already covered by README.md.
+- Do not invent project history.
+- Clearly mark uncertain information as "Needs confirmation".
+- Use exact file paths, commands and test names where possible.
+- Keep it concise and actionable.</pre>
+          <button class="copy" type="button" data-copy="#prompt-handover">Copy prompt</button>
+        </div>
+      </li>
+
+      <li class="step">
+        <div class="step-top">
+          <div class="num">5</div>
+          <div>
+            <h3>Test the handover</h3>
+            <p>Open a fresh chat (or swap laptops) and ask the next agent to answer from the docs only.</p>
+          </div>
+        </div>
+        <div class="prompt">
+          <pre id="prompt-test">You have just inherited this repository.
+Do not make any changes yet.
+Read README.md and HANDOVER.md, then tell me:
+1. What does this project do?
+2. How do I run it?
+3. How do I verify that it works?
+4. What is the current development status?
+5. What should I work on next?
+6. What important constraints should I avoid breaking?
+7. What information is still missing or ambiguous?</pre>
+          <button class="copy" type="button" data-copy="#prompt-test">Copy prompt</button>
+        </div>
+      </li>
+
+      <li class="step">
+        <div class="step-top">
+          <div class="num">6</div>
+          <div>
+            <h3>Close the loop</h3>
+            <p>Before finishing, update HANDOVER.md with what changed and what should happen next.</p>
+          </div>
+        </div>
+        <div class="prompt">
+          <pre id="prompt-close">Before finishing this session, update HANDOVER.md.
+Summarise:
+- what you changed,
+- what now works,
+- what remains unresolved,
+- important decisions made,
+- files modified,
+- what should happen next,
+- and how the next developer or AI agent can verify the current state.
+Do not repeat general project information already in README.md.
+Keep it concise and actionable.</pre>
+          <button class="copy" type="button" data-copy="#prompt-close">Copy prompt</button>
+        </div>
+      </li>
+    </ol>
+
+    <footer>
+      <div class="links">
+        <a href="./poster.html">Printable poster</a>
+        <a href="./activity.md">Facilitator activity notes</a>
+        <a id="footer-repo" href="#" target="_blank" rel="noopener">GitHub repository</a>
+      </div>
+      <p style="margin-top:0.8rem">Local check after cloning: <span class="mono">pytest</span> ·
+        <span class="mono">python main.py --input examples/sample_image.npy --output output/sample_mask.npy</span></p>
+    </footer>
+  </main>
+
+  <script>
+    (function () {
+      const cfg = window.STAND_CONFIG || {};
+      const host = window.location.hostname; // user.github.io
+      const pathParts = window.location.pathname.split("/").filter(Boolean);
+      const autoUser = host.endsWith(".github.io") ? host.replace(".github.io", "") : "";
+      const autoRepo = pathParts[0] || cfg.repoName || "ai-handover-demo";
+
+      const user = cfg.githubUser || autoUser || "YOUR_USER";
+      const repo = cfg.repoName || autoRepo;
+      const repoUrl = cfg.repoUrl || `https://github.com/${user}/${repo}`;
+      const zipUrl = cfg.zipUrl || `${repoUrl}/archive/refs/heads/main.zip`;
+      const cloneCmd = cfg.cloneCmd || `git clone ${repoUrl}.git`;
+
+      const openRepo = document.getElementById("open-repo");
+      const downloadZip = document.getElementById("download-zip");
+      const footerRepo = document.getElementById("footer-repo");
+      const cloneEl = document.getElementById("clone-cmd");
+      const hint = document.getElementById("config-hint");
+
+      openRepo.href = repoUrl;
+      downloadZip.href = zipUrl;
+      footerRepo.href = repoUrl;
+      cloneEl.textContent = cloneCmd;
+
+      if (user !== "YOUR_USER") {
+        hint.style.display = "none";
+      }
+
+      document.querySelectorAll(".copy").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const sel = btn.getAttribute("data-copy");
+          const el = document.querySelector(sel);
+          const text = el ? el.textContent : "";
+          try {
+            await navigator.clipboard.writeText(text);
+            btn.classList.add("done");
+            const original = btn.getAttribute("data-copy") === "#clone-cmd"
+              ? "Copy clone command"
+              : "Copy prompt";
+            btn.textContent = "Copied";
+            setTimeout(() => {
+              btn.classList.remove("done");
+              btn.textContent = original;
+            }, 1400);
+          } catch (err) {
+            btn.textContent = "Select & copy manually";
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
