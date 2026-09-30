@@ -1,6 +1,6 @@
 # Segmentation Tool
 
-Activity page: https://vibecodingmiccai.github.io/readme-handover/
+Activity page: https://vibecodingmiccai.github.io/stand2_readme-handover/
 
 A small image segmentation tool.
 ## Installation
